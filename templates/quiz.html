@@ -21,7 +21,7 @@
     <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
 
     <meta http-equiv="Content-Type" content="text/html;charset=UTF-8">
-    <title>Quiz</title>
+    <title>Game</title>
     <style>
         #spinner {
             margin: auto;
@@ -36,30 +36,27 @@
     </style>
 </head>
 <body style="margin: 10px">
-<h1 style="margin-left: 40%">Teacher</h1>
+<h1 style="margin-left: 40%; color: red">Red Player</h1>
 <h4>Name: Vighnesh Sivaraman</h4>
 <h4>UTA ID: 1001878596</h4>
-<div id="quiz">
-    <label>Student Name: <span id="student_name"></span></label><br>
-    <label>Teacher Name: <span id="teacher_name"></span></label><br>
-    <label for="question"><strong>Question: </strong></label>
-    <input id="question" name="question" type="text">
-    <input id="save_name" class="btn btn-primary" value="Submit" onclick="saveQuestion()" name="name" type="button"><br>
-    <label for="last_question"><strong>Question Last sent to student: </strong><span
-            id="last_question"></span></label><br>
-    <label for="answer"><strong>Answer from student: </strong><span id="answer"></span></label><br>
-    <label for="score"><strong>Score: </strong></label>
-    <input id="score" name="score" type="number" max="10" min="1" maxlength="2">
-    <input id="save_score" class="btn btn-primary" value="Submit" onclick="saveScore()" name="name" type="button"><br>
-    <label for="last_score"><strong>Score Last sent to student: </strong><span id="last_score"></span></label><br>
-</div><br><br><br>
+<div id="game">
+    <span id="timer"></span>
+    <label style="color: red">Red Player Name: <span id="red_name"></span></label><br>
+    <label style="color: red">Remaining Stones: <span id="remaining_red"></span></label><br>
+    <button class="btn btn-primary" onclick="removeRock()">Remove Red Rock</button>
+    <br><br><br><br>
 
-<input id="end_quiz" class="btn btn-danger" value="End Quiz" onclick="endQuiz()" name="end_quiz" type="button"><br>
+    <label style="color: green">Green Player Name: <span id="green_name"></span></label><br>
+    <label style="color: green">Remaining Stones: <span id="remaining_green"></span></label><br>
+</div>
+<br><br><br>
+
+<input id="end_game" class="btn btn-danger" value="End Game" onclick="endGame()" type="button"><br>
 
 <div id="spinner" class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
     <span class="sr-only">Loading...</span>
 </div>
-<h2 id="waiting">Waiting for Student...</h2>
+<h2 id="waiting">Waiting for Green Player...</h2>
 <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.21/lodash.min.js"></script>
 <script src="{{ url_for('static', filename='quiz_scripts.js') }}"></script>
 </body>

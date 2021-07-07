@@ -5,8 +5,7 @@ from dataclasses import dataclass
 import sqlalchemy
 from flask import Flask, render_template, request, jsonify
 from flask_sqlalchemy import SQLAlchemy
-from sqlalchemy import create_engine, ForeignKey, orm
-from sqlalchemy.orm import relationship
+from sqlalchemy import create_engine
 
 server = os.environ['UD_HOST_NAME']
 database = os.environ['UD_DB_NAME']
@@ -31,122 +30,71 @@ db = SQLAlchemy(app)
 
 
 @dataclass
-class Teacher(db.Model):
-    __tablename__ = 'teacher'
-    id: int
-    name: str
-
-    id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    name = db.Column(sqlalchemy.VARCHAR(200))
-    game = relationship("Game")
-
-    @property
-    def serializable(self):
-        """Return object data in easily serializable format"""
-        return {
-            'id': self.id,
-            'name': self.name
-        }
-
-
-@dataclass
-class Student(db.Model):
-    __tablename__ = 'student'
-    id: int
-    name: str
-
-    id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    name = db.Column(sqlalchemy.VARCHAR(200))
-    game = relationship("Game")
-
-    @property
-    def serializable(self):
-        """Return object data in easily serializable format"""
-        return {
-            'id': self.id,
-            'name': self.name
-        }
-
-
-@dataclass
 class Game(db.Model):
-    __tablename__ = 'games'
+    __tablename__ = 'game'
     id: int
-    teacher_id: str
-    student_id: str
-    admin_name: str
-    question: str
-    answer: str
-    created_on: datetime
-    updated_on: datetime
-    score: int
+    red_name: str
+    green_name: str
+    red: int
+    green: int
+    turn: str
+    start_time: datetime
 
     id = db.Column(db.Integer(), primary_key=True, nullable=False)
-    teacher_id = db.Column(sqlalchemy.Integer(), ForeignKey('teacher.id'))
-    teacher = relationship("Teacher", back_populates="game", lazy='joined')
-    student_id = db.Column(sqlalchemy.Integer(), ForeignKey('student.id'))
-    student = relationship("Student", back_populates="game", lazy='joined')
-    admin_name = db.Column(sqlalchemy.VARCHAR(200))
-    question = db.Column(sqlalchemy.VARCHAR(200))
-    answer = db.Column(sqlalchemy.VARCHAR(200))
-    created_on = db.Column(sqlalchemy.TIMESTAMP)
-    updated_on = db.Column(sqlalchemy.TIMESTAMP)
-    score = db.Column(sqlalchemy.Integer())
+    red_name = db.Column(sqlalchemy.VARCHAR(200))
+    green_name = db.Column(sqlalchemy.VARCHAR(200))
+    red = db.Column(sqlalchemy.Integer())
+    green = db.Column(sqlalchemy.Integer())
+    turn = db.Column(sqlalchemy.CHAR(1))
+    start_time = db.Column(sqlalchemy.TIMESTAMP)
 
     @property
     def serializable(self):
         """Return object data in easily serializable format"""
         return {
             'id': self.id,
-            'teacher': self.teacher.serializable,
-            'student': self.student.serializable,
-            'question': self.question,
-            'answer': self.answer,
-            'score': self.score,
+            'red_name': self.red_name,
+            'green_name': self.green_name,
+            'red': self.red,
+            'green': self.green,
+            'turn': self.turn,
+            'start_time': self.start_time
         }
 
 
 @app.route('/', methods=['GET'])
 def home():
-    teachers = Teacher.query.all()
-    print(teachers)
-    if len(teachers) <= 0:
+    game = Game.query.all()
+    print(game)
+    if not game or not game[0].red_name:
+        if len(game) <= 0:
+            game = Game(red=5, green=5)
+            db.session.add(game)
+            db.session.commit()
         return render_template('index.html')
     else:
         return render_template('quiz.html')
 
 
-def create_name(data):
-    teacher = Teacher(name=data['name'])
-    db.session.add(teacher)
-    db.session.commit()
-    games = Game.query.options(orm.joinedload('*')).all()
-    student = Student.query.all()
-    if teacher and student and not games:
-        game = Game(teacher=teacher, student=student[0])
-        db.session.add(game)
-        db.session.commit()
-    return teacher
-
-
-def update_question(question: str):
+def update_name(name):
     game = Game.query.one()
-    game.question = question
+    game.red_name = name
+    game.start_time = datetime.datetime.now()
+    db.session.add(game)
     db.session.commit()
-    return question
+    return game
 
 
-def update_score(score: str):
+def decrement_rock():
     game = Game.query.one()
-    game.score = score
+    game.red -= 1
+    db.session.add(game)
     db.session.commit()
-    return score
+    return game
 
 
 def delete_all_data():
     Game.query.delete()
-    Teacher.query.delete()
-    Student.query.delete()
     db.session.commit()
     return {"status": "Delete success"}
 
@@ -154,21 +102,12 @@ def delete_all_data():
 @app.route('/name', methods=['POST'])
 def save_name():
     print(request.get_json()['name'])
-    return jsonify(create_name(request.get_json()))
+    return jsonify(update_name(request.get_json()['name']))
 
 
-@app.route('/question', methods=['POST'])
+@app.route('/rock', methods=['POST'])
 def save_question():
-    question = request.get_json()['question']
-    print(question)
-    return jsonify(update_question(question))
-
-
-@app.route('/score', methods=['POST'])
-def save_score():
-    score = request.get_json()['score']
-    print(score)
-    return jsonify(update_score(score))
+    return jsonify(decrement_rock())
 
 
 @app.route('/end', methods=['POST'])
@@ -184,13 +123,9 @@ def hello_world():
 @app.route('/stream')
 def game_stream():
     data = {}
-    games = Game.query.options(orm.joinedload('*')).all()
-    teacher = Teacher.query.all()
-    student = Student.query.all()
-    print(teacher, student, games)
+    games = Game.query.all()
     if games:
-        data = [dict(g.serializable, student=g.student.serializable, teacher=g.teacher.serializable)
-                for g in games][0]
+        data = games[0]
     return jsonify(data)
 
 
