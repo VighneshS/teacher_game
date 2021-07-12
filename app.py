@@ -211,7 +211,7 @@ def publish_game_data():
 
 
 scheduler = BackgroundScheduler()
-scheduler.add_job(func=publish_game_data, trigger="interval", seconds=10)
+scheduler.add_job(func=publish_game_data, trigger="interval", seconds=20)
 scheduler.start()
 
 # Shut down the scheduler when exiting the app
