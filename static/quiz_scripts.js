@@ -1,18 +1,37 @@
 let spinner
 let question
-let score
-let last_score
-let last_question
 let waiting
 let quiz
 let student_name
 let teacher_name
-let answer
+let gameId
+let time_elapsed
 
-function saveQuestion() {
+const question_id = '{{question_id}}'
+const student_answer = '{{student_answer}}'
+const score_sent = '{{score_sent}}'
+const last_question = '{{last_question}}'
+const quiz_div = `
+<label for="question{{question_id}}"><strong>Question {{question_id}}: </strong></label>
+    <input id="question{{question_id}}" type="text">
+    <input id="save_question_btn{{question_id}}" class="btn btn-primary" value="Submit" onclick="saveQuestion({{question_id}}, '#question{{question_id}}')" type="button"><br>
+    <label for="last_question{{question_id}}"><strong>Question Last sent to student: </strong><span
+            id="last_question{{question_id}}">{{last_question}}</span></label><br>
+    <label for="answer{{question_id}}"><strong>Answer from student: </strong><span id="answer{{question_id}}">{{student_answer}}</span></label><br>
+    <label for="score{{question_id}}"><strong>Score: </strong></label>
+    <input id="score{{question_id}}" type="number" max="10" min="1" maxlength="2">
+    <input id="save_score{{question_id}}" class="btn btn-primary" value="Submit" onclick="saveScore({{question_id}}, '#score{{question_id}}')" type="button"><br>
+    <label for="last_score{{question_id}}"><strong>Score sent to student: </strong><span id="last_score{{question_id}}">{{score_sent}}</span></label><br><br><br>
+`
+
+function saveQuestion(id, question_div, callback) {
+    question = question_div !== '' ? $(question_div).val() : ''
+    let questionAnswer = {}
     spinner.show()
     let payLoad = {
-        'question': question.val()
+        'question': question,
+        'gameId': gameId,
+        'id': id
     }
     $.ajax({
         type: 'POST',
@@ -21,15 +40,41 @@ function saveQuestion() {
         dataType: 'json',
         data: JSON.stringify(payLoad)
     }).done(function (data) {
-        console.log(data);
+        questionAnswer = data
         spinner.hide()
+        if (callback) {
+            callback(data)
+        }
     });
+    return questionAnswer
 }
 
-function saveScore() {
+function createNewQuestion(id) {
+    saveQuestion(id, '', function (questionAnswer) {
+        quiz.append(quiz_div.replaceAll(question_id, questionAnswer['id'])
+            .replaceAll(student_answer, questionAnswer['answer'])
+            .replaceAll(score_sent, questionAnswer['score'])
+            .replaceAll(last_question, questionAnswer['question']))
+    })
+
+}
+
+function createQuestionsBlock(questionAnswers) {
+    quiz.empty()
+    for (const questionAnswersKey in questionAnswers) {
+        quiz.append(quiz_div.replaceAll(question_id, questionAnswers[questionAnswersKey]['id'])
+            .replaceAll(student_answer, questionAnswers[questionAnswersKey]['answer'])
+            .replaceAll(score_sent, questionAnswers[questionAnswersKey]['score'])
+            .replaceAll(last_question, questionAnswers[questionAnswersKey]['question']))
+    }
+
+}
+
+function saveScore(id, score_div_id) {
     spinner.show()
     let payLoad = {
-        'score': score.val()
+        'score': $(score_div_id).val(),
+        'id': id
     }
     $.ajax({
         type: 'POST',
@@ -38,7 +83,6 @@ function saveScore() {
         dataType: 'json',
         data: JSON.stringify(payLoad)
     }).done(function (data) {
-        console.log(data);
         spinner.hide()
     });
 }
@@ -51,7 +95,6 @@ function endQuiz() {
         contentType: "application/json",
         dataType: 'json'
     }).done(function (data) {
-        console.log(data);
         spinner.hide()
         window.location.replace('/')
     });
@@ -60,40 +103,58 @@ function endQuiz() {
 $(function () {
     spinner = $('#spinner')
     question = $('#question')
-    score = $('#score')
-    last_question = $('#last_question')
-    last_score = $('#last_score')
     waiting = $('#waiting')
     quiz = $('#quiz')
     student_name = $('#student_name')
     teacher_name = $('#teacher_name')
-    answer = $('#answer')
+    time_elapsed = $('#time_elapsed')
     waiting.show()
     spinner.hide()
     quiz.hide()
     spinner.hide()
-    let dataInterval = setInterval(function () {
-        $.ajax({
-            type: 'GET',
-            url: "/stream",
-            contentType: "application/json",
-            dataType: 'json'
-        }).done(function (data) {
-            console.log(data);
+
+    function sse() {
+        let source = new EventSource('/stream');
+        source.onmessage = function (e) {
+            let data = JSON.parse(e.data)
+            gameId = data.id
             if (data['student'] && data['teacher']) {
                 student_name.html(data['student']['name'])
                 teacher_name.html(data['teacher']['name'])
-                last_question.html(data['question'])
-                last_score.html(data['score'])
-                answer.html(data['answer'])
+                let questions = data['questions']
+                createQuestionsBlock(questions)
+                console.log(new Date(data['created_on']));
+                let countDownDate = new Date(data['created_on']).getTime()
+                let x = setInterval(function () {
+
+                    // Get today's date and time
+                    let now = new Date().getTime();
+
+                    // Find the distance between now and the count down date
+                    let distance = now - countDownDate;
+
+                    // Time calculations for days, hours, minutes and seconds
+                    let days = Math.floor(distance / (1000 * 60 * 60 * 24));
+                    let hours = Math.floor((distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    let minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+                    let seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+                    // Display the result in the element with id="demo"
+                    time_elapsed.html(days + "d " + hours + "h "
+                        + minutes + "m " + seconds + "s ")
+                }, 1000);
                 quiz.show()
                 spinner.hide()
                 waiting.hide()
             }
+
             if (!data['teacher']) {
-                clearInterval(dataInterval)
+                source.close()
                 window.location.replace('/')
             }
-        });
-    }, 10000);
+
+        };
+    }
+
+    sse();
 })

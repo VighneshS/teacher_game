@@ -39,20 +39,14 @@
 <h1 style="margin-left: 40%">Teacher</h1>
 <h4>Name: Vighnesh Sivaraman</h4>
 <h4>UTA ID: 1001878596</h4>
+<span><strong id="out"></strong></span>
+<div>Time Elapsed: <span id="time_elapsed"></span></div>
+<label>Student Name: <span id="student_name"></span></label><br>
+<label>Teacher Name: <span id="teacher_name"></span></label><br>
 <div id="quiz">
-    <label>Student Name: <span id="student_name"></span></label><br>
-    <label>Teacher Name: <span id="teacher_name"></span></label><br>
-    <label for="question"><strong>Question: </strong></label>
-    <input id="question" name="question" type="text">
-    <input id="save_name" class="btn btn-primary" value="Submit" onclick="saveQuestion()" name="name" type="button"><br>
-    <label for="last_question"><strong>Question Last sent to student: </strong><span
-            id="last_question"></span></label><br>
-    <label for="answer"><strong>Answer from student: </strong><span id="answer"></span></label><br>
-    <label for="score"><strong>Score: </strong></label>
-    <input id="score" name="score" type="number" max="10" min="1" maxlength="2">
-    <input id="save_score" class="btn btn-primary" value="Submit" onclick="saveScore()" name="name" type="button"><br>
-    <label for="last_score"><strong>Score Last sent to student: </strong><span id="last_score"></span></label><br>
-</div><br><br><br>
+</div>
+<input id="create_new" class="btn btn-primary" value="Create New Question" onclick="createNewQuestion(0)" type="button"><br>
+<br><br><br>
 
 <input id="end_quiz" class="btn btn-danger" value="End Quiz" onclick="endQuiz()" name="end_quiz" type="button"><br>
 
