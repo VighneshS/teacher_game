@@ -123,7 +123,6 @@ $(function () {
                 teacher_name.html(data['teacher']['name'])
                 let questions = data['questions']
                 createQuestionsBlock(questions)
-                console.log(new Date(data['created_on']));
                 let countDownDate = new Date(data['created_on']).getTime()
                 let x = setInterval(function () {
 
